@@ -1,4 +1,5 @@
 import random
+import pandas as pd
 from dataclasses import asdict
 
 from redsim.engine import run_scenario
@@ -33,7 +34,14 @@ def run_sweep(
 
 
 if __name__ == "__main__":
-    rows = run_sweep(raid_sizes=[4,8], decoy_fractions=[0.0,0.5], n_runs=3)
-    print(len(rows), "runs")
-    for row in rows:
-        print(row)
+    rows = run_sweep(
+        raid_sizes=list(range(1, 25)),
+        decoy_fractions=[0.0, 0.25, 0.5],
+        n_runs=200,
+    )
+    df = pd.DataFrame(rows)
+    df.to_csv("results.csv", index=False)
+
+    print(len(df), "runs saved to results.csv")
+    print(df.head())
+    print(df.groupby(["raid_size", "decoy_fraction"])["leakers"].mean().unstack())
