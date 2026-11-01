@@ -1,4 +1,5 @@
 """ Builds ready to run scenarios from a few Red dials. Blue is fixed"""
+import random   
 from redsim.models import Drone, DroneType, Effector, Radar, Site
 
 # Two drone types available to Red
@@ -10,6 +11,7 @@ DECOY = DroneType(name="Decoy", speed_kmh=150, cost=0.1,
 def build_scenario(
     raid_size: int,
     decoy_fraction: float,
+    rng: random.Random | None = None
 ) -> tuple[list[Drone], list[Radar], list[Effector]]:
     """Fixed Blue defence vs a Red raid of raid_size Drones"""
     site_a = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
@@ -26,20 +28,17 @@ def build_scenario(
     ]
 
 
-    # Red Cell scenario variables
+     # --- Red: decoys mixed through the raid if an rng is given ---
     n_decoys = int(round(raid_size * decoy_fraction))
+    types = [DECOY] * n_decoys + [OWA] * (raid_size - n_decoys)   # what kind of drone will be used in the raid
+    if rng is not None:
+        rng.shuffle(types)
 
-    drones = [] 
-    for i in range(raid_size):    # first drones are decoys, rest are real    
-        if i < n_decoys:
-            drone_type = DECOY
-        else:
-            drone_type = OWA
-
-        target = sites[i % 2]     # alternates between two sites
+    drones = []
+    for i, drone_type in enumerate(types):
+        target = sites[i % 2]  # alternate between the two sites
         drones.append(Drone(drone_type=drone_type, x_km=0, y_km=i,
                             altitude_m=50, target=target))
-
         
     return drones, radars, effectors
 

@@ -16,7 +16,8 @@ def run_sweep(
     for raid_size in raid_sizes:
         for decoy_fraction in decoy_fractions:
             for seed in range(n_runs):
-                drones, radars, effectors = build_scenario(raid_size, decoy_fraction)
+                layout_rng = random.Random(seed + 1_000_000)
+                drones, radars, effectors = build_scenario(raid_size, decoy_fraction, layout_rng)
                 red_cost = sum(d.drone_type.cost for d in drones)
                 n_decoys = sum(d.drone_type.is_decoy for d in drones)
                 n_real = raid_size - n_decoys
