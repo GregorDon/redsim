@@ -27,6 +27,7 @@ def run_sweep(
 
                 # One row: result + dials that produced it
                 row = asdict(result)
+                row.pop("history")
                 row["raid_size"] = raid_size
                 row["decoy_fraction"] = decoy_fraction
                 row["seed"] = seed

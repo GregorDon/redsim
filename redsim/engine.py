@@ -1,8 +1,17 @@
-"""this is the engagement loop and runs one raid from launch to finish"""
+"""this is the engagement loop and runs one raid from launch to finish
+DESCRIPTION
+this is the scenario function, the main engine of the program. This takes copies of drones and effectors, runs them over a time period and plays out the detect > shoot > move logic
+a while loop checks that the engine can run so long as the current time is below the max time, and while the drones are still alive and at least one hasn't arrived.
+we put a drone in a detected list if any radar can see it, and use that list as the drones to shoot at with the effectors, then the remaining alive drones move.
+We use real hits to determine if drones struck their target (if not a decoy), and sites hit to count the sites that were hit. In this block we also keep a value of magazine amount start state - end state.
+we use a zip, to combine the magazine amount per effector into a tuple which is used to count amount of rounds used by each effectors - Jammers are "None" so don't deplete magazine.  
+we then return the scenario results which we will use to do analysis on. 
+the main code here runs a scenario 3 times (using range 3), trying drones at different y positions from -2km to 2km. """
+
 import copy
 import random
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from redsim.models import Drone, Effector, Radar
 
@@ -15,21 +24,20 @@ class ScenarioResult:
     leakers: int    # real (non-decoy) drones that reached their target
     value_destroyed: float # each site counted once, however many hits
     rounds_used: int    # interceptors fired (jammers not counted)
-
-# DESCRIPTION
-# this is the scenario function, the main engine of the program. This takes copies of drones and effectors, runs them over a time period and plays out the detect > shoot > move logic
-# a while loop checks that the engine can run so long as the current time is below the max time, and while the drones are still alive and at least one hasn't arrived.
-# we put a drone in a detected list if any radar can see it, and use that list as the drones to shoot at with the effectors, then the remaining alive drones move.
-# We use real hits to determine if drones struck their target (if not a decoy), and sites hit to count the sites that were hit. In this block we also keep a value of magazine amount start state - end state.
-# we use a zip, to combine the magazine amount per effector into a tuple which is used to count amount of rounds used by each effectors - Jammers are "None" so don't deplete magazine.  
-# we then return the scenario results which we will use to do analysis on. 
-# the main code here runs a scenario 3 times (using range 3), trying drones at different y positions from -2km to 2km. 
-
+    history: list = field(default_factory=list)  # snapshots per step, if recorded
 
 def distance_to_target_km(drone: Drone) -> float:
     """How far a drone still has to fly. Used to rank threats."""
     return math.hypot(drone.target.x_km - drone.x_km,
                       drone.target.y_km - drone.y_km)
+
+def snapshot(drones: list[Drone]) -> list[dict]:
+    """Where every drone is right now, and its status. One animation frame."""
+    return [
+        {"x_km": d.x_km, "y_km": d.y_km, "alive": d.alive,
+         "arrived": d.arrived, "is_decoy": d.drone_type.is_decoy, "target": d.target.name}
+        for d in drones
+    ]
 
 def run_scenario(
         drones: list[Drone],
@@ -38,13 +46,17 @@ def run_scenario(
         rng: random.Random,
         dt_s: float = 10.0,
         max_time_s: float = 3600.0,
+        record: bool = False,
     )   -> ScenarioResult:
         """Fly every drone until dead or arrived, with Blue shooting back"""
         drones = copy.deepcopy(drones)
         effectors = copy.deepcopy(effectors)
         start_mags = [e.magazine for e in effectors]
+        history = [snapshot(drones)] if record else []
 
         t_s = 0.0
+        if record:
+            history = [snapshot(drones)] if record else []
         while t_s < max_time_s:
               active = [d for d in drones if d.alive and not d.arrived]  # build a fresh list each step of drones still in flight
               if not active:
@@ -70,6 +82,8 @@ def run_scenario(
               for drone in active:
                     drone.step(dt_s)
               t_s += dt_s
+              if record:
+                  history.append(snapshot(drones))
 
         real_hits = [d for d in drones if d.arrived and not d.drone_type.is_decoy]
         sites_hit = {d.target.name: d.target.value for d in real_hits}
@@ -84,6 +98,7 @@ def run_scenario(
               leakers = len(real_hits),
               value_destroyed=sum(sites_hit.values()),
               rounds_used= rounds_used,
+              history=history,
         )
 
 if __name__ == "__main__":

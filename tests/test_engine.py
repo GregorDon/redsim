@@ -60,3 +60,33 @@ def test_gun_engages_nearest_threat_first():
     result = run_scenario(drones, [radar], [gun], random.Random(0))
 
     assert result.leakers == 0
+
+
+def test_record_gives_one_snapshot_per_drone_per_step():
+    # Arrange: 3 undefended drones, 30 km out at 150 km/h
+    site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)
+    drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)
+              for _ in range(3)]
+
+    # Act: run with recording switched on, and store the result
+    result = run_scenario(drones, [], [], random.Random(0), record=True)
+
+    # Assert: 30 km at 150 km/h is 720 s, so 72 steps of 10 s, plus the start frame
+    assert len(result.history) == 73
+    assert all(len(frame) == 3 for frame in result.history)
+
+
+def test_no_history_by_default():
+    # Arrange: one undefended drone
+    site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)
+    drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)]
+
+    # Act: run without asking to record
+    result = run_scenario(drones, [], [], random.Random(0))
+
+    # Assert: nothing was recorded
+    assert result.history == []
