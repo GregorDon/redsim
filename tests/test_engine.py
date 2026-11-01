@@ -6,7 +6,8 @@ from redsim.models import Drone, DroneType, Effector, Radar, Site
 
 def test_no_defences_all_drones_leak():
     site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
-    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,jammable=False, is_decoy=False)                 
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)                 
     drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)
               for _ in range(3)]
 
@@ -18,12 +19,25 @@ def test_no_defences_all_drones_leak():
 
 def test_run_does_not_change_inputs():
     site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
-    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,jammable=False, is_decoy=False)
-    gun = Effector(name="Gun 1", x_km=30, y_km=0, range_km=3, p_kill=0.5, magazine =4, is_jammer=False)            
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)
+    gun = Effector(name="Gun 1", x_km=30, y_km=0, range_km=3, 
+                   p_kill=0.5, magazine =4, is_jammer=False)            
     drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)
               for _ in range(3)]
 
     result = run_scenario(drones, [], [gun], random.Random(42))
 
     assert gun.magazine == 4
- 
+
+def test_large_raid_all_leak_without_defences():
+    site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)           
+    drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)
+            for _ in range(30)]
+
+    result = run_scenario(drones, [], [], random.Random(42))
+
+    assert result.leakers == 30
+    assert result.kills == 0

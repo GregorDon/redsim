@@ -11,7 +11,8 @@ def test_higher_drone_detected_at_same_distance():
 
 def test_drone_arrives_exactly_on_target():
     site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
-    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, jammable=False, is_decoy=False)
+    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, 
+                    jammable=False, is_decoy=False)
     drone = Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=10, target=site)
    
 
@@ -23,9 +24,11 @@ def test_drone_arrives_exactly_on_target():
 
 def test_certain_kill_uses_one_round():
     site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
-    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, jammable=False, is_decoy=False)
+    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, 
+                    jammable=False, is_decoy=False)
     drone = Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=10, target=site)
-    weapon = Effector(name="missile", x_km=30, y_km=0, range_km=5, p_kill=1.0, magazine=3, is_jammer=False)               
+    weapon = Effector(name="missile", x_km=30, y_km=0, range_km=5,
+                      p_kill=1.0, magazine=3, is_jammer=False)               
     rng = random.Random(42)
 
     weapon.engage(drone, rng)
@@ -35,9 +38,11 @@ def test_certain_kill_uses_one_round():
 
 def test_jammer_cannot_kill_unjammable_drone():
     site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
-    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, jammable=False, is_decoy=False)
+    owa = DroneType(name="One-way-attack", speed_kmh=150, cost=1.0, 
+                    jammable=False, is_decoy=False)
     drone = Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=10, target=site)
-    jammer = Effector(name="jammer", x_km=30, y_km=0, range_km=5, p_kill=1.0, magazine=None, is_jammer=True)                    
+    jammer = Effector(name="jammer", x_km=30, y_km=0, range_km=5, 
+                      p_kill=1.0, magazine=None, is_jammer=True)                    
     rng = random.Random(42)
     
     jammer.engage(drone, rng)

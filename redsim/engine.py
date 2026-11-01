@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 from redsim.models import Drone, Effector, Radar
 
+# creates a dataclass to hold the results of each scenario run by the engine
+
 @dataclass
 class ScenarioResult:
     """what happened in one raid"""
@@ -12,6 +14,15 @@ class ScenarioResult:
     leakers: int    # real (non-decoy) drones that reached their target
     value_destroyed: float # each site counted once, however many hits
     rounds_used: int    # interceptors fired (jammers not counted)
+
+# DESCRIPTION
+# this is the scenario function, the main engine of the program. This takes copies of drones and effectors, runs them over a time period and plays out the detect > shoot > move logic
+# a while loop checks that the engine can run so long as the current time is below the max time, and while the drones are still alive and at least one hasn't arrived.
+# we put a drone in a detected list if any radar can see it, and use that list as the drones to shoot at with the effectors, then the remaining alive drones move.
+# We use real hits to determine if drones struck their target (if not a decoy), and sites hit to count the sites that were hit. In this block we also keep a value of magazine amount start state - end state.
+# we use a zip, to combine the magazine amount per effector into a tuple which is used to count amount of rounds used by each effectors - Jammers are "None" so don't deplete magazine.  
+# we then return the scenario results which we will use to do analysis on. 
+# the main code here runs a scenario 3 times (using range 3), trying drones at different y positions from -2km to 2km. 
 
 def run_scenario(
         drones: list[Drone],
@@ -28,9 +39,9 @@ def run_scenario(
 
         t_s = 0.0
         while t_s < max_time_s:
-              active = [d for d in drones if d.alive and not d.arrived]
+              active = [d for d in drones if d.alive and not d.arrived]  # build a fresh list each step of drones still in flight
               if not active:
-                    break
+                    break           # empty list counts as False, exit the loop if True.
 
               #1. Sense: a drone is visible if ANY radar can see it
               detected = [
@@ -48,7 +59,7 @@ def run_scenario(
               #3. Move
               for drone in active:
                     drone.step(dt_s)
-                    t_s += dt_s
+              t_s += dt_s
 
         real_hits = [d for d in drones if d.arrived and not d.drone_type.is_decoy]
         sites_hit = {d.target.name: d.target.value for d in real_hits}
