@@ -90,3 +90,22 @@ def test_no_history_by_default():
 
     # Assert: nothing was recorded
     assert result.history == []
+
+def test_record_logs_one_certain_shot():
+    # Arrange: one drone, a radar, and a gun with 1 round that can't miss
+    site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)
+    drones = [Drone(drone_type=owa, x_km=0, y_km=0, altitude_m=50, target=site)]
+    radar = Radar(name="R1", x_km=30, y_km=0, mast_height_m=10, max_range_km=30)
+    gun = Effector(name="Gun 1", x_km=30, y_km=0, range_km=3,
+                   p_kill=1.0, magazine=1, is_jammer=False)
+
+    # Act: run with recording on, and store the result
+    result = run_scenario(drones, [radar], [gun], random.Random(0), record=True)
+
+    # Assert: the two lists line up, and exactly one shot was logged, a hit
+    all_shots = [s for step in result.shot_history for s in step]
+    assert len(result.shot_history) == len(result.history)
+    assert len(all_shots) == 1
+    assert all_shots[0]["hit"] is True

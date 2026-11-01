@@ -25,6 +25,7 @@ class ScenarioResult:
     value_destroyed: float # each site counted once, however many hits
     rounds_used: int    # interceptors fired (jammers not counted)
     history: list = field(default_factory=list)  # snapshots per step, if recorded
+    shot_history: list = field(default_factory=list)  # shots per step, if recorded
 
 def distance_to_target_km(drone: Drone) -> float:
     """How far a drone still has to fly. Used to rank threats."""
@@ -53,6 +54,7 @@ def run_scenario(
         effectors = copy.deepcopy(effectors)
         start_mags = [e.magazine for e in effectors]
         history = [snapshot(drones)] if record else []
+        shot_history = [[]] if record else []  # no shots at launch
 
         t_s = 0.0
         if record:
@@ -71,19 +73,30 @@ def run_scenario(
               # Rank threats: engage the drone closest to its target first
               detected.sort(key=distance_to_target_km)
               
-              #2.Shoot: each effector takes one shot per time step
+              #2. Shoot: each effector takes one shot per time step
+              step_shots = []
               for effector in effectors:
                     for drone in detected:
                           if drone.alive and effector.in_range(drone):
+                                mag_before = effector.magazine
                                 effector.engage(drone, rng)
+                                # Record it if the jammer worked or a round was spent
+                                if record and (effector.is_jammer
+                                               or effector.magazine != mag_before):
+                                      step_shots.append({
+                                            "from_x": effector.x_km, "from_y": effector.y_km,
+                                            "to_x": drone.x_km, "to_y": drone.y_km,
+                                            "is_jammer": effector.is_jammer,
+                                            "hit": not drone.alive,
+                                      })
                                 break
-
               #3. Move
               for drone in active:
                     drone.step(dt_s)
               t_s += dt_s
               if record:
                   history.append(snapshot(drones))
+                  shot_history.append(step_shots)
 
         real_hits = [d for d in drones if d.arrived and not d.drone_type.is_decoy]
         sites_hit = {d.target.name: d.target.value for d in real_hits}
@@ -99,6 +112,7 @@ def run_scenario(
               value_destroyed=sum(sites_hit.values()),
               rounds_used= rounds_used,
               history=history,
+              shot_history=shot_history,
         )
 
 if __name__ == "__main__":

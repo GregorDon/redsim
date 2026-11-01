@@ -5,6 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.collections import LineCollection
 
 from redsim.engine import run_scenario
 from redsim.scenarios import build_scenario
@@ -15,7 +16,7 @@ def to_xy(points: list[tuple[float, float]]) -> np.ndarray:
     return np.array(points).reshape(-1, 2)
 
 
-def animate_raid(history, drones, radars, effectors, path, dt_s=10.0, trail_len=20):
+def animate_raid(history, shot_history, drones, radars, effectors, path, dt_s=10.0, trail_len=16):
     """Draw the fixed scene once, then move the drones frame by frame."""
     view_start_km = 0  # left edge of the map; drones appear from here
     sub_steps = 3 # in-between frames drawn per simulated step (smoothness)
@@ -57,6 +58,21 @@ def animate_raid(history, drones, radars, effectors, path, dt_s=10.0, trail_len=
     clock = ax.text(0.02, 0.97, "", transform=ax.transAxes, va="top",
                     family="monospace", fontsize=10,
                     bbox=dict(facecolor="black", alpha=0.7, edgecolor="grey"))
+    
+    # Shot lines: white for the gun, dotted magenta for the jammer
+    gun_lines = LineCollection([], colors="white", linewidths=1.5, label="Gun shot")
+    jam_lines = LineCollection([], colors="magenta", linewidths=1.2,
+                               linestyles=":", label="Jamming")
+    ax.add_collection(gun_lines)
+    ax.add_collection(jam_lines)
+
+    # Gun rounds: starting magazine, and how many fired by each frame
+    start_rounds = sum(e.magazine for e in effectors if not e.is_jammer)
+    fired_so_far = []
+    total = 0
+    for shots in shot_history:
+        total += sum(not s["is_jammer"] for s in shots)
+        fired_so_far.append(total)
 
     ax.set_xlim(-2, 40)
     ax.set_ylim(-3, max(d.y_km for d in drones) + 3)
@@ -97,10 +113,19 @@ def animate_raid(history, drones, radars, effectors, path, dt_s=10.0, trail_len=
         hit_names = {f["target"] for f in frame if f["arrived"] and not f["is_decoy"]}
         hit_glow.set_offsets(to_xy([(s.x_km, s.y_km) for s in sites if s.name in hit_names]))
 
+        # Shots fired during this step (k -> k+1)
+        shots = shot_history[min(k + 1, len(shot_history) - 1)]
+        gun_lines.set_segments([[(s["from_x"], s["from_y"]), (s["to_x"], s["to_y"])]
+                                for s in shots if not s["is_jammer"]])
+        jam_lines.set_segments([[(s["from_x"], s["from_y"]), (s["to_x"], s["to_y"])]
+                                for s in shots if s["is_jammer"]])
+        
         # Scoreboard
         kills = sum(not f["alive"] for f in frame)
         leakers = sum(f["arrived"] and not f["is_decoy"] for f in frame)
-        clock.set_text(f"T+{(k + t) * dt_s:4.0f} s\nKills:   {kills}\nLeakers: {leakers}")
+        rounds_left = start_rounds - fired_so_far[k]
+        clock.set_text(f"T+{(k + t) * dt_s:4.0f} s\nKills:   {kills}\n"
+                       f"Leakers: {leakers}\nRounds:  {rounds_left}/{start_rounds}")
 
     # Play every frame, then hold the last one for 1.5 s so the result is readable
     frames = list(range(len(history))) + [len(history) - 1] * 15
@@ -145,5 +170,5 @@ if __name__ == "__main__":
           f"value_destroyed={result.value_destroyed}")
 
     Path("figures").mkdir(exist_ok=True)
-    animate_raid(result.history, drones, radars, effectors, "figures/raid.gif")
+    animate_raid(result.history, result.shot_history, drones, radars, effectors, "figures/raid.gif")
     print("Saved figures/raid.gif")
