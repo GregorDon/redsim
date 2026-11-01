@@ -41,3 +41,22 @@ def test_large_raid_all_leak_without_defences():
 
     assert result.leakers == 30
     assert result.kills == 0
+
+
+def test_gun_engages_nearest_threat_first():
+    site = Site(name="Substation A", x_km=30, y_km=0, value=8.0)
+    owa = DroneType(name="One-way attack", speed_kmh=150, cost=1.0,
+                    jammable=False, is_decoy=False)
+    decoy = DroneType(name="Decoy", speed_kmh=150, cost=0.1,
+                    jammable=True, is_decoy=True)
+    drones = [
+        Drone(drone_type=decoy, x_km=20, y_km=0, altitude_m=100, target=site),  # first, but further
+        Drone(drone_type=owa, x_km=25, y_km=0, altitude_m=100, target=site),    # second, but closer
+    ]
+    radar = Radar(name="R1", x_km=30, y_km=0, mast_height_m=10, max_range_km=30)
+    gun = Effector(name="Gun 1", x_km=30, y_km=0, range_km=15,
+                p_kill=1.0, magazine=1, is_jammer=False)
+
+    result = run_scenario(drones, [radar], [gun], random.Random(0))
+
+    assert result.leakers == 0

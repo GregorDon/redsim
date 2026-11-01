@@ -1,6 +1,7 @@
 """this is the engagement loop and runs one raid from launch to finish"""
 import copy
 import random
+import math
 from dataclasses import dataclass
 
 from redsim.models import Drone, Effector, Radar
@@ -23,6 +24,12 @@ class ScenarioResult:
 # we use a zip, to combine the magazine amount per effector into a tuple which is used to count amount of rounds used by each effectors - Jammers are "None" so don't deplete magazine.  
 # we then return the scenario results which we will use to do analysis on. 
 # the main code here runs a scenario 3 times (using range 3), trying drones at different y positions from -2km to 2km. 
+
+
+def distance_to_target_km(drone: Drone) -> float:
+    """How far a drone still has to fly. Used to rank threats."""
+    return math.hypot(drone.target.x_km - drone.x_km,
+                      drone.target.y_km - drone.y_km)
 
 def run_scenario(
         drones: list[Drone],
@@ -47,8 +54,11 @@ def run_scenario(
               detected = [
                     d for d in active
                     if any(r.can_detect(d.x_km, d.y_km,d.altitude_m)for r in radars)
+                    
               ]
-
+              # Rank threats: engage the drone closest to its target first
+              detected.sort(key=distance_to_target_km)
+              
               #2.Shoot: each effector takes one shot per time step
               for effector in effectors:
                     for drone in detected:

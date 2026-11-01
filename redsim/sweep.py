@@ -18,6 +18,8 @@ def run_sweep(
             for seed in range(n_runs):
                 drones, radars, effectors = build_scenario(raid_size, decoy_fraction)
                 red_cost = sum(d.drone_type.cost for d in drones)
+                n_decoys = sum(d.drone_type.is_decoy for d in drones)
+                n_real = raid_size - n_decoys
                 result = run_scenario(drones, radars, effectors,
                                       random.Random(seed))
 
@@ -27,6 +29,8 @@ def run_sweep(
                 row["raid_size"] = raid_size
                 row["decoy_fraction"] = decoy_fraction
                 row["seed"] = seed
+                row["n_decoys"] = n_decoys
+                row["n_real"] = n_real
                 row["red_cost"] = red_cost
                 rows.append(row)
 
@@ -45,3 +49,4 @@ if __name__ == "__main__":
     print(len(df), "runs saved to results.csv")
     print(df.head())
     print(df.groupby(["raid_size", "decoy_fraction"])["leakers"].mean().unstack())
+    print(df[df["raid_size"] == 2][["raid_size", "decoy_fraction", "n_decoys", "n_real"]].drop_duplicates())
