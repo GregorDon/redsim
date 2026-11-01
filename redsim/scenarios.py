@@ -36,7 +36,7 @@ def build_scenario(
 
     drones = []
     for i, drone_type in enumerate(types):
-        target = sites[i % 2]  # alternate between the two sites
+        target = sites[i % 2]  # alternate between the two sites with list positon 0 or 1
         drones.append(Drone(drone_type=drone_type, x_km=0, y_km=i,
                             altitude_m=50, target=target))
         
