@@ -15,8 +15,9 @@ through while the gun still has rounds, because it can only fire once
 per time step, and once its magazine runs dry the rest get through.
 
 ## Key findings
-- **Blue's defence breaks between 5-6 real drones.** Below Blue can survive with low or no damage;
-  above it, damage climbs steeply towards all CNI value destroyed.
+- **Blue's defence breaks between 5-6 real drones.** Below that, Blue
+  survives with little or no damage; above it, damage climbs steeply
+  towards all CNI value destroyed.
 - **Blue is limited twice.** Rate of fire (one shot per time step)
   bites first when drones arrive together. The magazine is the hard
   ceiling: 8 rounds × 0.5 kill probability ≈ 4 kills per raid. 
@@ -80,9 +81,6 @@ point is a useful consistency check.
 
 ## Testing and validation
 - 22 tests cover the radar physics, engagement rules and engine.
-- Analytic check: a single drone facing the gun leaks about 3% of the
-  time, matching 0.5⁵ ≈ 3%, the chance of surviving five independent
-  shots at a 0.5 kill probability.
 - Two tests were written after finding bugs, and each was confirmed
   to fail before the fix:
 - The clock advanced once per drone rather than once per step, so
@@ -92,7 +90,8 @@ point is a useful consistency check.
 
 ## Assumptions and limitations
 - Drones fly straight at their target at constant speed and altitude.
-- Values used for ranges and kill probabilities are illustrative and not based on real equipment. 
+- Values used for ranges, magazine size and kill probabilities are
+  illustrative and not based on real equipment.
 - The gun fires once per time step, so the step length sets its rate
   of fire. In the raids shown, rate of fire limits Blue before the
   magazine does.
