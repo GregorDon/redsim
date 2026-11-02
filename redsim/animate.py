@@ -157,14 +157,14 @@ def rank_seeds(raid_size: int, decoy_fraction: float, n_seeds: int = 200):
 
 
 if __name__ == "__main__":
-    scores = rank_seeds(12, 0.25)
+    scores = rank_seeds(17, 0.25)
     average_kills = sum(k for k, _, _ in scores) / len(scores)
     print(f"Average kills: {average_kills:.1f}")
     print("Best for Blue:", scores[:3])
     print("Worst for Blue:", scores[-3:])
 
     seed = 6
-    drones, radars, effectors = build_scenario(12, 0.25, random.Random(seed + 1_000_000))
+    drones, radars, effectors = build_scenario(17, 0.5, random.Random(seed + 1_000_000))
     result = run_scenario(drones, radars, effectors, random.Random(seed), record=True)
     print(f"kills={result.kills}  leakers={result.leakers}  "
           f"value_destroyed={result.value_destroyed}")
